@@ -30,20 +30,20 @@ mongoose.connect(dbURL, mongooseOptions, (err) => {
 });
 
 let redisURL = {
-    //You will need to follow the "Setting up Redis for Local Use" instructions
-    hostname: 'redis-19746.c8.us-east-1-2.ec2.cloud.redislabs.com',
-    port: '19746',
+  // You will need to follow the "Setting up Redis for Local Use" instructions
+  hostname: 'redis-19746.c8.us-east-1-2.ec2.cloud.redislabs.com',
+  port: '19746',
 };
 
 let redisPASS = '6jd7RgjUEsOPayFjKju0VAZnaFIzAONP';
 if (process.env.REDISCLOUD_URL) {
-    redisURL = url.parse(process.env.REDISCLOUD_URL);
-    redisPASS = redisURL.auth.split(':')[1];
+  redisURL = url.parse(process.env.REDISCLOUD_URL);
+  [, redisPASS] = redisURL.auth.split(':');
 }
-let redisClient = redis.createClient({
-    host: redisURL.hostname,
-    port: redisURL.port,
-    password: redisPASS,
+const redisClient = redis.createClient({
+  host: redisURL.hostname,
+  port: redisURL.port,
+  password: redisPASS,
 });
 
 // Pull in our routes
@@ -60,13 +60,13 @@ app.use(bodyParser.urlencoded({
 app.use(session({
   key: 'sessionid',
   store: new RedisStore({
-      client: redisClient,
+    client: redisClient,
   }),
   secret: 'Domo Arigato',
   resave: true,
   saveUninitialized: true,
   cookie: {
-      httpOnly: true,
+    httpOnly: true,
   },
 }));
 app.engine('handlebars', expressHandlebars({ defaultLayout: 'main' }));
@@ -75,10 +75,10 @@ app.set('views', `${__dirname}/../views`);
 app.use(cookieParser());
 app.use(csrf());
 app.use((err, req, res, next) => {
-    if (err.code !== 'EBADCSRFTOKEN') return next(err);
-    
-    console.log('Missing CSRF Token');
-    return false;
+  if (err.code !== 'EBADCSRFTOKEN') return next(err);
+
+  console.log('Missing CSRF Token');
+  return false;
 });
 
 router(app);
