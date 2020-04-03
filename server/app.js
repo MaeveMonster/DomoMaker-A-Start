@@ -7,8 +7,11 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const expressHandlebars = require('express-handlebars');
 const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
+const url = require('url');
+const redis = require('redis');
 
-const port = process.env.PORT || process.env.NODE_PORT || 3000;
+const port = process.env.PORT || process.env.NODE_PORT || 3001;
 
 const dbURL = process.env.MONGODB_URI || 'mongodb://localhost/DomoMaker';
 
@@ -25,6 +28,23 @@ mongoose.connect(dbURL, mongooseOptions, (err) => {
   }
 });
 
+let redisURL = {
+    //You will need to follow the "Setting up Redis for Local Use" instructions
+    hostname: 'redis-19746.c8.us-east-1-2.ec2.cloud.redislabs.com',
+    port: '19746',
+};
+
+let redisPASS = '6jd7RgjUEsOPayFjKju0VAZnaFIzAONP';
+if (process.env.REDISCLOUD_URL) {
+    redisURL = url.parse(process.env.REDISCLOUD_URL);
+    redisPASS = redisURL.auth.split(':')[1];
+}
+let redisClient = redis.createClient({
+    host: redisURL.hostname,
+    port: redisURL.port,
+    password: redisPASS,
+});
+
 // Pull in our routes
 const router = require('./router.js');
 
@@ -37,9 +57,15 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(session({
   key: 'sessionid',
+  store: new RedisStore({
+      client: redisClient,
+  }),
   secret: 'Domo Arigato',
   resave: true,
   saveUninitialized: true,
+  cookie: {
+      httpOnly: true,
+  },
 }));
 app.engine('handlebars', expressHandlebars({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
